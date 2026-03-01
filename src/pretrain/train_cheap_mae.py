@@ -304,10 +304,17 @@ def train(args):
             logging.info(f"  Validation with Dropout: {args.p_drop_eda} for EDA, {args.p_drop_cheap} for cheap modalities")
         
         # Log model architecture (they are all the same)
-        ecg_model = models['ecg']
-        logging.info("\nModel Architecture:")
-        logging.info(str(ecg_model))
-        logging.info(f"Total parameters: {sum(p.numel() for p in ecg_model.parameters()):,}")
+        any_name = next(iter(models.keys()))
+        any_model = models[any_name]
+        logging.info(f"\nModel Architecture (showing '{any_name}'):")
+        logging.info(str(any_model))
+        logging.info(f"Total parameters: {sum(p.numel() for p in any_model.parameters()):,}")
+
+        #cg_model = models['ecg']
+        #ogging.info("\nModel Architecture:")
+        #ogging.info(str(ecg_model))
+        #ogging.info(f"Total parameters: {sum(p.numel() for p in ecg_model.parameters()):,}")
+
         logging.info("-" * 50)
 
     # --- Data ---
@@ -461,7 +468,11 @@ def train(args):
             sch.step()
 
         # --- Save Losses and Checkpoints ---
-        current_lr = schedulers['ecg'].get_last_lr()[0] # Get LR from one of the schedulers
+        #urrent_lr = schedulers['ecg'].get_last_lr()[0] # Get LR from one of the schedulers
+
+        any_name = next(iter(schedulers.keys()))
+        current_lr = schedulers[any_name].get_last_lr()[0]  # Get LR from any scheduler
+
         losses.append({
             'epoch': epoch + 1,
             'train_total_loss': avg_train_total_loss, 'train_recon_loss': avg_train_recon_loss, 'train_align_loss': avg_train_align_loss, 'train_disent_loss': avg_train_disent_loss,
