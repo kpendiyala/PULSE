@@ -162,6 +162,34 @@ def windowize(bvp: np.ndarray, acc: np.ndarray, temp: np.ndarray, eda: np.ndarra
         return None
     return np.stack(X_list), np.stack(Y_list), np.array(L_list, dtype=np.int32)
 
+EPS = 1e-6
+
+def baseline_zscore_windows(X: np.ndarray, Y: np.ndarray, L: np.ndarray):
+    """
+    X: (N, WIN_LEN, 3)  [bvp, acc_mag, temp]
+    Y: (N, WIN_LEN)     eda
+    L: (N,)             0 baseline/rest, 1 stress
+    Returns normalized X,Y and stats.
+    """
+    base = (L == 0)
+    if not np.any(base):
+        raise ValueError("No baseline windows found; cannot compute baseline z-score stats.")
+
+    # Per-channel stats for X over (windows,time)
+    x_mean = X[base].mean(axis=(0, 1))
+    x_std  = X[base].std(axis=(0, 1))
+    x_std  = np.where(x_std < EPS, 1.0, x_std).astype(np.float32)
+    x_mean = x_mean.astype(np.float32)
+
+    # Scalar stats for Y (EDA)
+    y_mean = np.float32(Y[base].mean())
+    y_std  = np.float32(Y[base].std())
+    if float(y_std) < EPS:
+        y_std = np.float32(1.0)
+
+    Xn = ((X - x_mean[None, None, :]) / x_std[None, None, :]).astype(np.float32)
+    Yn = ((Y - y_mean) / y_std).astype(np.float32)
+    return Xn, Yn, x_mean, x_std, y_mean, y_std
 
 # -------------------------
 # Main
@@ -198,7 +226,16 @@ def main(subject: str = "S01"):
         return
 
     X, Y, L = pack
-    np.savez_compressed(out_windows, X=X, Y=Y, L=L)
+
+    # --- NEW: baseline-per-subject normalization (train/test leakage-safe since per subject) ---
+    X, Y, x_mean, x_std, y_mean, y_std = baseline_zscore_windows(X, Y, L)
+
+    np.savez_compressed(
+        out_windows,
+        X=X, Y=Y, L=L,
+        x_mean=x_mean, x_std=x_std,
+        y_mean=y_mean, y_std=y_std,
+    )
 
     print("Saved labeled:", out_labeled)
     print("Saved windows:", out_windows)
