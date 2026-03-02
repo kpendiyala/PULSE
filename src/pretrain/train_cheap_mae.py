@@ -338,8 +338,8 @@ def train(args):
     logging.info(f"Training set size: {len(train_dataset)}")
     logging.info(f"Validation set size: {len(val_dataset)}\n")
 
-    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=8)
-    val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
+    train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=16)
+    val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=16)
     
     # Get a fixed batch from the validation set for visualization
     vis_batch = next(iter(val_dataloader))
